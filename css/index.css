@@ -1,0 +1,131 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #f4f4f7;
+  font-family: "Open Sans", sans-serif;
+}
+
+.tittle {
+  text-align: center;
+  padding: 50px;
+  margin: 20px;
+  font-size: 2em;
+  font-weight: 600;
+}
+
+#map {
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  width: 100%;
+  height: calc(100vh - 57px);
+  z-index: 1;
+  width: 100%;
+  box-shadow: 5px 5px 5px #888;
+}
+
+.select {
+  background: #fff;
+  width: 100%;
+  box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.16);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.2s ease all;
+  margin-bottom: 10px;
+  padding: 10px;
+  position: relative;
+  z-index: 200;
+  border: 2px solid transparent;
+}
+
+.select.active,
+.select:hover {
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.16);
+  border: 2px solid #213f8f;
+}
+
+.select.active:before {
+  content: "";
+  display: block;
+  height: 0;
+  width: 0;
+  border-top: 15px solid #213f8f;
+  border-right: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+  border-left: 15px solid transparent;
+  position: absolute;
+  bottom: -30px;
+  left: calc(50% - 15px);
+}
+
+.select i {
+  font-size: 30px;
+  margin-left: 30px;
+  color: #213f8f;
+}
+
+footer {
+  background-color: #cfd1d3;
+  padding: 10px;
+  margin-top: 50px;
+}
+
+p {
+  margin: 0;
+  font-weight: bold;
+}
+
+.img-right {
+	float: right;
+	margin-left: 10px;
+	margin-top: 5px;
+}
+
+elemento::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+elemento::-webkit-scrollbar-thumb {
+  background-color: #6b747d;
+}
+
+elemento::-webkit-scrollbar {
+  width: 10px; 
+  height: 10px; 
+}
+
+body::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+  background-color: #6b747d;
+}
+
+body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+  
+
+@keyframes fadeIn {
+  from {
+    transform: translateY(-200px) scale(0.5);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .selectbox {
+    width: 100%;
+  }
+}

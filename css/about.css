@@ -1,0 +1,17 @@
+body {
+	background: #f4f4f7;
+	font-family: 'Open Sans', sans-serif;
+}
+
+.card-img-fixed {
+  width: 200px;
+  height: 350px;
+  object-fit: fill;
+}
+
+.tittle {
+    text-align: center;
+    padding: 20px;
+    font-size: 2em;
+    font-weight: 600;
+}
