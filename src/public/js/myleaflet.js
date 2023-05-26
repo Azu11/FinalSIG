@@ -1,9 +1,10 @@
 // Map Attributes
 var wfsCasosViolencia = new L.layerGroup();
+var wfsDepartamentos = new L.layerGroup();
 
 // GeoServer Settings
-var url_geoserver_wfs = "http://localhost:8080/geoserver/wfs?";
-var url_geoserver_wms = "http://localhost:8080/geoserver/wms?";
+var url_geoserver_wfs = "/geoserver/wfs?";
+var url_geoserver_wms = "/geoserver/wms?";
 
 // WMS
 //capa casos de violencia WMS
@@ -31,7 +32,46 @@ var WmsDepartamento = new L.tileLayer.wms(url_geoserver_wms, {
 var wfsURL_CasosViolencia =
   url_geoserver_wfs +
   "version=1.0.0&request=GetFeature&typeName=violencia:caso_violencia&outputFormat=application/json";
+var wfsURL_departamentos =
+  url_geoserver_wfs +
+  "version=1.0.0&request=GetFeature&typeName=violencia:Departamentos&outputFormat=application/json";
 
+// Styles
+
+function Estilolinea(feature) {
+  return {
+    fillColor: "#600be0",
+    weight: 2,
+    opacity: 2,
+    color: "green",
+    dashArray: "3",
+    fillOpacity: 0.8,
+  };
+}
+
+var Estilodepartamento = {
+  color: "#16c702",
+  weight: 3,
+  opacity: 0.8,
+};
+
+var grupoMarcadores = L.markerClusterGroup();
+
+function EstiloCasos(feature) {
+  return {
+    color: "#232424",
+    radius: 7,
+  };
+}
+
+const mark = (feature, latlng) =>
+  grupoMarcadores.addLayer(
+    L.circleMarker(latlng, EstiloCasos(feature)).bindPopup(
+      feature.properties.situacion
+    )
+  );
+
+// Marker
 var greenIcon = new L.Icon({
   iconUrl: "../img/marcador.png",
   shadowUrl:
@@ -41,6 +81,21 @@ var greenIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+// Interaccion
+function InteraccionDep(feature, layer) {
+  if (feature.properties && feature.properties.NOM_DEPART) {
+    var shapeareaFormatted =
+      feature.properties.SHAPE_AREA.toLocaleString("es-CO");
+    layer.bindPopup(
+      "Departamento: " +
+        feature.properties.NOM_DEPART +
+        "<br>" +
+        "Area: " +
+        shapeareaFormatted
+    );
+  }
+}
 
 async function getWFSgeoJson_CasosViolencia11() {
   try {
@@ -63,24 +118,29 @@ async function getWFSgeoJson_CasosViolencia() {
   }
 }
 
+// Capas DEPARTAMENTOS WFS
+fetch(wfsURL_departamentos)
+  .then(function (response) {
+    return response.json();
+  })
+  .then(function (data) {
+    // Crear capa L.geoJSON con los datos cargados
+    L.geoJSON(data, {
+      style: Estilodepartamento,
+      onEachFeature: InteraccionDep,
+    }).addTo(wfsDepartamentos);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+
 // capa casos de violencia WFS
+
+wfsCasosViolencia.addLayer(grupoMarcadores);
+
 getWFSgeoJson_CasosViolencia().then((data) => {
   L.geoJSON(data, {
-    onEachFeature: function (f, l) {
-      var customOptions = {
-        maxWindth: "100px",
-        className: "customPop",
-      };
-      var popupContent =
-        "<div><b>" +
-        f.properties.sexo +
-        "</b><br/>" +
-        f.properties.situacion +
-        "</div>";
-      L.marker([f.properties.latitud, f.properties.longitud], {
-        icon: greenIcon,
-      }).bindPopup(popupContent, customOptions);
-    },
+    pointToLayer: mark,
   }).addTo(wfsCasosViolencia);
 });
 
@@ -104,7 +164,7 @@ var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend");
   div.innerHTML +=
-    '<img src="http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=violencia">';
+    '<img src="/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=violencia">';
   return div;
 };
 legend.addTo(map);
@@ -160,7 +220,8 @@ var baseLayers = {
 var overlaymaps = {
   "Casos de Violencia (WMS)": WmsCasosViolencia,
   "Casos de Violencia (WFS)": wfsCasosViolencia,
-  Departamentos: WmsDepartamento,
+  "Departamentos (WMS)": WmsDepartamento,
+  "Departamentos (WFS)": wfsDepartamentos,
 };
 
 // add base layers
@@ -212,7 +273,6 @@ function removePointsFromMap() {
   }
 }
 
-
 function addPointsToMap(features) {
   // Crea una capa de puntos con los features
   const layer = L.geoJSON(features, {
@@ -234,7 +294,6 @@ function addPointsToMap(features) {
   // Agrega la capa al mapa
   layer.addTo(map);
 }
-
 
 // Arreglo para almacenar los municipios únicos
 var uniqueMunicipalities = [];
@@ -284,62 +343,72 @@ fetch(wfsURL_CasosViolencia)
     console.error(error);
   });
 
-  departmentSelect.addEventListener("change", (event) => {
-    const departmentName = event.target.value;
-  
-    // Selecciona el valor por defecto del select de municipios
-    municipalitySelect.value = "";
-  
-    // Quita los puntos del municipio anterior
-    removePointsFromMap();
-  
-    // Limpia la variable de municipios únicos
-    uniqueMunicipalities = [];
-  
-    // Limpia el select de municipios
-    municipalitySelect.innerHTML = "";
-  
-    // Agrega el valor por defecto al select de municipios
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Seleccione el Municipio...";
-    municipalitySelect.appendChild(defaultOption);
-  
-    // Actualiza el valor del select de departamentos con el departamento seleccionado
-    departmentSelect.value = departmentName;
-  
-    // Carga los municipios del departamento seleccionado
-    fetch(wfsURL_CasosViolencia)
-      .then((response) => response.json())
-      .then((data) => {
-        const features = data.features;
-        const municipalities = features
-          .filter((item) => item.properties.departamen === departmentName)
-          .map((item) => ({ name: item.properties.municipio }));
-        municipalities.forEach((municipality) => {
-          if (!uniqueMunicipalities.includes(municipality.name)) {
-            uniqueMunicipalities.push(municipality.name);
-            const option = document.createElement("option");
-            option.value = municipality.name;
-            option.textContent = municipality.name;
-            municipalitySelect.appendChild(option);
-          }
-        });
-  
-        municipalitySelect.disabled = false;
-  
-        const selectedFeatures = features.filter(
-          (item) =>
-            item.properties.departamen === departmentName &&
-            municipalities.some(
-              (municipality) => municipality.name === item.properties.municipio
-            )
-        );
-  
-        addPointsToMap(selectedFeatures);
+departmentSelect.addEventListener("change", (event) => {
+  const departmentName = event.target.value;
+
+  // Selecciona el valor por defecto del select de municipios
+  municipalitySelect.value = "";
+
+  // Quita los puntos del municipio anterior
+  removePointsFromMap();
+
+  // Limpia la variable de municipios únicos
+  uniqueMunicipalities = [];
+
+  // Limpia el select de municipios
+  municipalitySelect.innerHTML = "";
+
+  // Agrega el valor por defecto al select de municipios
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Seleccione el Municipio...";
+  municipalitySelect.appendChild(defaultOption);
+
+  // Actualiza el valor del select de departamentos con el departamento seleccionado
+  departmentSelect.value = departmentName;
+
+  // Carga los municipios del departamento seleccionado
+  fetch(wfsURL_CasosViolencia)
+    .then((response) => response.json())
+    .then((data) => {
+      const features = data.features;
+      const municipalities = features
+        .filter((item) => item.properties.departamen === departmentName)
+        .map((item) => ({ name: item.properties.municipio }));
+      municipalities.forEach((municipality) => {
+        if (!uniqueMunicipalities.includes(municipality.name)) {
+          uniqueMunicipalities.push(municipality.name);
+          const option = document.createElement("option");
+          option.value = municipality.name;
+          option.textContent = municipality.name;
+          municipalitySelect.appendChild(option);
+        }
       });
+
+      municipalitySelect.disabled = false;
+
+      const selectedFeatures = features.filter(
+        (item) =>
+          item.properties.departamen === departmentName &&
+          municipalities.some(
+            (municipality) => municipality.name === item.properties.municipio
+          )
+      );
+      addPointsToMap(selectedFeatures);
+    });
+});
+
+function addPointsToMap(features) {
+  const grupoMarcadores = L.markerClusterGroup();
+
+  features.forEach((feature) => {
+    const latlng = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
+    L.circleMarker(latlng, EstiloCasos(feature)).bindPopup(feature.properties.situacion).addTo(grupoMarcadores);
   });
-  
+
+  grupoMarcadores.addTo(map);
+}
+
 
 municipalitySelect.addEventListener("change", (event) => {
   const municipalityName = event.target.value;
@@ -352,15 +421,16 @@ municipalitySelect.addEventListener("change", (event) => {
 
   // Carga los puntos del municipio seleccionado
   fetch(wfsURL_CasosViolencia)
-    .then((response) => response.json())
-    .then((data) => {
-      const features = data.features;
-      const selectedFeatures = features.filter(
-        (item) => item.properties.municipio === municipalityName
-      );
+  .then((response) => response.json())
+  .then((data) => {
+    const features = data.features;
+    const selectedFeatures = features.filter(
+      (item) => item.properties.municipio === municipalityName
+    );
 
-      addPointsToMap(selectedFeatures);
-    });
+    addPointsToMap(selectedFeatures);
+  });
+
 });
 
 //-----------------------------------------------------------------------------------------
@@ -371,16 +441,16 @@ function clearResult() {
   removePointsFromMap();
 }
 
-//Funtion Search - Codigo DANE
-const searchDANE = (codigo) => {
-  return fetch(wfsURL_CasosViolencia).then((res) => res.json()).then((data) => {
-    return data.features.find(({properties}) => properties.codigo_dan.includes(codigo));
-  });
-};
-
+// Función Search - Codigo Caso
 const searchInput = document.getElementById("search-value");
 const search = document.getElementById("search");
 
+const searchProductor = (caso) => {
+  return fetch(wfsURL_CasosViolencia).then((res) => res.json()).then((data) => {
+    return data.features.find(({properties}) => properties.id_capo = caso);
+  });
+};
+
 search.addEventListener("click", async () => {
-  L.geoJSON(await searchDANE(searchInput.value)).addTo(map);
+  L.geoJSON(await searchProductor(searchInput.value)).addTo(map);
 })
