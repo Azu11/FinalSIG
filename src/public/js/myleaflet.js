@@ -57,30 +57,110 @@ var Estilodepartamento = {
 
 var grupoMarcadores = L.markerClusterGroup();
 
-function EstiloCasos(feature) {
+function EstiloCasos(marker) {
   return {
+    icon: greenIcon,
     color: "#232424",
     radius: 7,
   };
 }
 
-const mark = (feature, latlng) =>
-  grupoMarcadores.addLayer(
-    L.circleMarker(latlng, EstiloCasos(feature)).bindPopup(
-      feature.properties.situacion
-    )
-  );
-
 // Marker
-var greenIcon = new L.Icon({
-  iconUrl: "../img/marcador.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+const LeafIcon = L.Icon.extend({
+  options: {
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+    iconSize: [38, 95],
+    shadowSize: [50, 64],
+    iconAnchor: [22, 94],
+    shadowAnchor: [4, 62],
+    popupAnchor: [-3, -76],
+  },
 });
+
+const greenIcon = new LeafIcon({ iconUrl: "./img/marcador.png" });
+
+//--------------------------------------------------------------------------------------------------------------------
+
+function getButtonHTML(popupContent) {
+  return (
+    '<button id="actionButton" class="btn btn-info action-button" onclick="obtenerdatos(\'' +
+    popupContent +
+    '\')"> <i class="fas fa-search"></i> Visitar</button>'
+  );
+}
+
+function accioncasos(feature, layer) {
+  const idCaso = feature.properties.id_caso;
+  const idtable = feature.properties.idtable;
+  const municipio = feature.properties.municipio;
+  const departamento = feature.properties.departamen;
+  const sexo = feature.properties.sexo;
+  const ocupacion = feature.properties.ocupacion;
+  const situacion = feature.properties.situacion;
+  const calidad_victima = feature.properties.calidad_victima;
+
+  datos = {
+    idtable,
+    idCaso,
+  };
+
+  const popupContent =
+    "Municipio: " +
+    municipio +
+    "<br>" +
+    "Departamento: " +
+    departamento +
+    "<br>" +
+    "Sexo: " +
+    sexo +
+    "<br>" +
+    "Ocupacion: " +
+    ocupacion +
+    "<br>" +
+    "Situacion: " +
+    situacion +
+    "<br>" +
+    "Calidad Victima: " +
+    calidad_victima +
+    "<br>";
+
+  const buttonHTML = getButtonHTML(popupContent);
+  const popupContentWithButton = popupContent + buttonHTML;
+
+  layer.bindPopup(popupContentWithButton);
+}
+
+function obtenerdatos(popupContent) {
+  Swal.fire({
+    title: "Ingrese su nombre",
+    input: "text",
+    inputAttributes: {
+      autocapitalize: "off",
+    },
+    showCancelButton: true,
+    confirmButtonText: "Aceptar",
+    cancelButtonText: "Cancelar",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const nombre = result.value;
+      console.log("IDtabla: ", datos.idtable);
+      console.log("IDcaso: ", datos.idCaso);
+      console.log("Nombre: ",nombre);
+    }
+  });
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+//360614
+const mark = (feature, latlng) => {
+  const circleMarker = L.circleMarker(latlng, {
+    style: EstiloCasos,
+    onEachFeature: accioncasos,
+  });
+  grupoMarcadores.addLayer(circleMarker);
+};
 
 // Interaccion
 function InteraccionDep(feature, layer) {
@@ -160,15 +240,6 @@ var map = L.map("map", {
   layers: [osm],
 });
 
-var legend = L.control({ position: "bottomright" });
-legend.onAdd = function (map) {
-  var div = L.DomUtil.create("div", "info legend");
-  div.innerHTML +=
-    '<img src="/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=violencia">';
-  return div;
-};
-legend.addTo(map);
-
 // Map Attributers
 var mAttr = "";
 
@@ -228,6 +299,25 @@ var overlaymaps = {
 var controlLayers = L.control
   .layers(baseLayers, overlaymaps, { collapse: false })
   .addTo(map);
+
+// Insertando un título en el mapa
+var title = L.control();
+title.onAdd = function (map) {
+  var div = L.DomUtil.create("div", "info");
+  div.innerHTML += "<h2>Casos de Violencia</h2>";
+  return div;
+};
+title.addTo(map);
+
+// Insertando una leyenda en el mapa
+var legend = L.control();
+legend.onAdd = function (map) {
+  var div = L.DomUtil.create("div", "info legend");
+  div.innerHTML +=
+    '<img src="./img/leyenda.jpg" alt="legend" width="101" height="60">';
+  return div;
+};
+legend.addTo(map);
 
 // Add SCALEBAR TO MAP
 L.control
@@ -398,17 +488,27 @@ departmentSelect.addEventListener("change", (event) => {
     });
 });
 
+function popupConInformacion(feature) {
+  const idCaso = feature.properties.id_caso;
+  const municipio = feature.properties.municipio;
+  return `${idCaso} - ${municipio}`;
+}
+
 function addPointsToMap(features) {
   const grupoMarcadores = L.markerClusterGroup();
 
   features.forEach((feature) => {
-    const latlng = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
-    L.circleMarker(latlng, EstiloCasos(feature)).bindPopup(feature.properties.situacion).addTo(grupoMarcadores);
+    const latlng = [
+      feature.geometry.coordinates[1],
+      feature.geometry.coordinates[0],
+    ];
+    L.circleMarker(latlng, EstiloCasos(feature))
+      .bindPopup(popupConInformacion(feature))
+      .addTo(grupoMarcadores);
   });
 
   grupoMarcadores.addTo(map);
 }
-
 
 municipalitySelect.addEventListener("change", (event) => {
   const municipalityName = event.target.value;
@@ -421,16 +521,15 @@ municipalitySelect.addEventListener("change", (event) => {
 
   // Carga los puntos del municipio seleccionado
   fetch(wfsURL_CasosViolencia)
-  .then((response) => response.json())
-  .then((data) => {
-    const features = data.features;
-    const selectedFeatures = features.filter(
-      (item) => item.properties.municipio === municipalityName
-    );
+    .then((response) => response.json())
+    .then((data) => {
+      const features = data.features;
+      const selectedFeatures = features.filter(
+        (item) => item.properties.municipio === municipalityName
+      );
 
-    addPointsToMap(selectedFeatures);
-  });
-
+      addPointsToMap(selectedFeatures);
+    });
 });
 
 //-----------------------------------------------------------------------------------------
@@ -446,11 +545,20 @@ const searchInput = document.getElementById("search-value");
 const search = document.getElementById("search");
 
 const searchProductor = (caso) => {
-  return fetch(wfsURL_CasosViolencia).then((res) => res.json()).then((data) => {
-    return data.features.find(({properties}) => properties.id_capo = caso);
-  });
+  return fetch(wfsURL_CasosViolencia)
+    .then((res) => res.json())
+    .then((data) => {
+      return data.features.find(
+        ({ properties }) => (properties.id_capo = caso)
+      );
+    });
 };
 
 search.addEventListener("click", async () => {
-  L.geoJSON(await searchProductor(searchInput.value)).addTo(map);
-})
+  const geoJSONLayer = L.geoJSON(await searchProductor(searchInput.value), {
+    style: EstiloCasos,
+    onEachFeature: accioncasos,
+  }).addTo(map);
+
+  map.fitBounds(geoJSONLayer.getBounds());
+});
