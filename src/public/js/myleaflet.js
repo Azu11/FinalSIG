@@ -132,6 +132,7 @@ function accioncasos(feature, layer) {
 }
 
 function obtenerdatos(popupContent) {
+  
   Swal.fire({
     title: "Ingrese su nombre",
     input: "text",
@@ -147,9 +148,21 @@ function obtenerdatos(popupContent) {
       console.log("IDtabla: ", datos.idtable);
       console.log("IDcaso: ", datos.idCaso);
       console.log("Nombre: ",nombre);
+      
+      fetch('http://localhost:3000/api/historial', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: nombre,
+          fk_caso: datos.idtable
+        })
+      });
     }
   });
 }
+
 
 //--------------------------------------------------------------------------------------------------------------------
 

@@ -48,7 +48,7 @@ historialRouter.delete("/:id", (req, res) => {
 });
 
 historialRouter.post("/", (req, res) => {
-  const { id_usuario, username, fk_join } = req.body;
+  const { id_usuario, username, fk_caso } = req.body;
 
   const getMaxIDQuery = "SELECT MAX(id_historial) AS lastID FROM historial";
   pg.query(getMaxIDQuery, (error, results) => {
@@ -61,14 +61,14 @@ historialRouter.post("/", (req, res) => {
         id_historial,
         username,
         fk_caso
-      ) VALUES (\\$1, \\$2, \\$3)
+      ) VALUES (\$1, \$2, \$3)
     `;
     
-      const insertParams = [newID, username, fk_join];
+      const insertParams = [newID, username, fk_caso];
       pg.query(insertQuery, insertParams, (error, results) => {
         if (!error) {
           console.log(
-            `Registro insertado con id ${newID}, username ${username} y fk_caso ${fk_join}`
+            `Registro insertado con id ${newID}, username ${username} y fk_caso ${fk_caso}`
           );
           res.sendStatus(204); // Respuesta sin contenido
         } else {
@@ -82,5 +82,6 @@ historialRouter.post("/", (req, res) => {
     }
   });
 });
+
 
 module.exports = historialRouter;
